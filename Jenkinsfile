@@ -1,5 +1,7 @@
 pipeline {
-   agent any
+   agent {
+	  label "${params.slave_name}"
+	}
 
    stages {
       stage('Clone') {
@@ -11,38 +13,30 @@ pipeline {
       stage('Build') {
          steps {
             // Run Maven on a Unix agent.
-            sh "mvn web3j:generate-sources"
+		 sh "${params.build_cmd}"
 
             // To run Maven on a Windows agent, use
             // bat "mvn -Dmaven.test.failure.ignore=true clean package"
          }
-
-         post {
-            // If Maven was able to run the tests, even if some of the test
-            // failed, record the test results and archive the jar file.
-            success {
-               
-               archiveArtifacts 'target/*.jar'
-            }
-         }
       }
       stage('docker build') {
          steps {
-             sh "docker build -t=saijyothi9/nginx ."
+		 sh "docker build -t=${params.docker_tag} ."
          }
       }
        stage('docker push') {
          steps {
-             sh "docker push saijyothi9/nginx"
+             sh "docker push ${params.docker_tag}"
          }
       }
        stage('docker run') {
          steps {
              sh "docker stop \$(docker ps -a -q)"
 			 sh "docker rm \$(docker ps -a -q)"
-			 sh "docker run --name mynginx1 -p 80:80 -d saijyothi9/nginx"
+			 sh "docker run --name mynginx1 -p 80:80 -d ${params.docker_tag}"
          }
       }
         
    }
 }
+© 2020 GitHub, Inc.
